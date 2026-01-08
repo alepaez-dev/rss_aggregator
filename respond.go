@@ -16,12 +16,12 @@ func respondWithError(w http.ResponseWriter, status int, msg string) {
 		log.Println("Responding with 5XX error: ", msg)
 	}
 
-	respondWithJson(w, status, errResp{
+	respondWithJSON(w, status, errResp{
 		Error: msg,
 	})
 
 }
-func respondWithJson[T any](w http.ResponseWriter, status int, payload T) error {
+func respondWithJSON[T any](w http.ResponseWriter, status int, payload T) error {
 	data, err := json.Marshal(payload)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
