@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ func handlerErr(w http.ResponseWriter, r *http.Request) {
 	respondWithError(w, 400, "Something went wrong")
 }
 
-func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
+func (cfg *ApiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	// Go treats http bodies as STREAMS instead of buffers -> we need to handle it. (fast for RAM 🐏)
 
 	type parameters struct {
@@ -58,6 +58,10 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 	respondWithJSON(
 		w,
 		http.StatusCreated,
-		resp{Status: fmt.Sprintf("User creates successfullu %v 🧃 :)", user.FirstName)},
+		databaseUserToUser(user),
 	)
+}
+
+func (cfg *ApiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
+	respondWithJSON(w, http.StatusOK, databaseUserToUser(user))
 }

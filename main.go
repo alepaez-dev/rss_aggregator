@@ -5,15 +5,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/alepaez-dev/rss_aggregator/internal/api"
 	"github.com/alepaez-dev/rss_aggregator/internal/database"
 	"github.com/joho/godotenv"
-
 	_ "github.com/lib/pq" // postgres driver
 )
-
-type apiConfig struct {
-	DB *database.Queries // depends on database.Queries struct (TODO: change later to behavioral pattern)
-}
 
 func main() {
 	godotenv.Load(".env")
@@ -34,11 +30,11 @@ func main() {
 	}
 
 	queries := database.New(conn)
-	cfg := apiConfig{
+	cfg := api.ApiConfig{
 		DB: queries,
 	}
 
-	mainRouter := newRouter(&cfg)
+	mainRouter := api.NewRouter(&cfg)
 	server := newServer(":"+port, mainRouter)
 
 	log.Printf("Server is running on port %v :) >> ", port)

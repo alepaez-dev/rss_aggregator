@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func newRouter(cfg *apiConfig) http.Handler {
+func NewRouter(cfg *ApiConfig) http.Handler {
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"http://localhost:3000", "https://localhost:3000"},
@@ -27,6 +27,8 @@ func newRouter(cfg *apiConfig) http.Handler {
 	v1Router.Get("/healthz", handlerReadiness)
 	v1Router.Get("/err", handlerErr)
 	v1Router.Post("/users", cfg.handlerCreateUser)
+	v1Router.Get("/users", cfg.middlewareAuth(cfg.handlerGetUser))
+	v1Router.Post("/feeds", cfg.middlewareAuth(cfg.handlerCreateFeed))
 	r.Mount("/v1", v1Router)
 
 	return r
