@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -34,7 +35,8 @@ func (cfg *ApiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 	})
 
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("Couldn't create feed: %v", err))
+		log.Printf("Couldn't create feed: %v", err)
+		respondWithError(w, http.StatusBadRequest, "Couldn't create feed")
 		return
 	}
 
@@ -42,5 +44,21 @@ func (cfg *ApiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 		w,
 		http.StatusCreated,
 		databaseFeedToFeed(feed),
+	)
+}
+
+func (cfg *ApiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
+	feeds, err := cfg.DB.GetFeeds(r.Context())
+
+	if err != nil {
+		log.Printf("Couldn't get feeds: %v", err)
+		respondWithError(w, http.StatusBadRequest, "Couldn't get feeds")
+		return
+	}
+
+	respondWithJSON(
+		w,
+		http.StatusAccepted,
+		databaseFeedsToFeed(feeds),
 	)
 }
