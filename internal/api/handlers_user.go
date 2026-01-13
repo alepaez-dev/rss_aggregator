@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/alepaez-dev/rss_aggregator/internal/database"
 	"github.com/google/uuid"
@@ -44,8 +43,6 @@ func (cfg *ApiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 
 	user, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
 		ID:        uuid.New(),
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
 		FirstName: params.FirstName,
 		LastName:  params.LastName,
 	})

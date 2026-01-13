@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/alepaez-dev/rss_aggregator/internal/database"
 	"github.com/google/uuid"
@@ -26,12 +25,10 @@ func (cfg *ApiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 	}
 
 	feed, err := cfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now().UTC(),
-		UpdatedAt: time.Now().UTC(),
-		Name:      params.Name,
-		Url:       params.Url,
-		UserID:    user.ID,
+		ID:     uuid.New(),
+		Name:   params.Name,
+		Url:    params.Url,
+		UserID: user.ID,
 	})
 
 	if err != nil {

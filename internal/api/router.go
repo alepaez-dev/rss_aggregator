@@ -40,6 +40,7 @@ func NewRouter(cfg *ApiConfig) http.Handler {
 	// Feeds Follows
 	v1Router.Post("/feed_follows", cfg.middlewareAuth(cfg.handlerCreateFeedFollow))
 	v1Router.Get("/feed_follows", cfg.middlewareAuth(cfg.handlerGetFeedFollows))
+	v1Router.Delete("/feed_follows/{feedFollowID}", cfg.middlewareAuth(cfg.handlerDeleteFeedFollow))
 
 	// V1
 	r.Mount("/v1", v1Router)
