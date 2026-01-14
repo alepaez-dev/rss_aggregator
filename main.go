@@ -2,16 +2,26 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/alepaez-dev/rss_aggregator/internal/api"
 	"github.com/alepaez-dev/rss_aggregator/internal/database"
+	"github.com/alepaez-dev/rss_aggregator/internal/feeds"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq" // postgres driver
 )
 
 func main() {
+	// TODO: just for testing
+	feed, err := feeds.UrlToFeed("https://news.ycombinator.com/rss")
+	if err != nil {
+		log.Fatal("Error fetching feed:", err)
+	}
+
+	fmt.Println(feed)
+
 	godotenv.Load(".env")
 	port := os.Getenv("PORT")
 
