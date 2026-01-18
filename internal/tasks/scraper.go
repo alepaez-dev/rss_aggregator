@@ -69,7 +69,6 @@ func worker(
 			if !ok { // safe check → is channel closed?
 				return
 			}
-			time.Sleep(5 * time.Second)
 			feedCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 			if err := scrapeFeed(feedCtx, db, feed); err != nil {
 				log.Printf("Error scraping feed %s: %v", feed.ID, err)
