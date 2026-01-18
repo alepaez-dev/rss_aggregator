@@ -2,34 +2,56 @@ package tasks
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/alepaez-dev/rss_aggregator/internal/database"
+	"github.com/alepaez-dev/rss_aggregator/internal/dberr"
 	"github.com/alepaez-dev/rss_aggregator/internal/feeds"
+	"github.com/google/uuid"
 )
 
-func scrapeFeed(ctx context.Context, db *database.Queries, feed database.Feed) {
-	fmt.Println("Scraping feed:", feed.ID)
-
+func scrapeFeed(ctx context.Context, db *database.Queries, feed database.Feed) error {
 	_, err := db.MarkFeedAsFetched(ctx, feed.ID)
 	if err != nil {
-		log.Printf("Error marking feed as fetched: %v", err)
-		return
+		return fmt.Errorf("mark feed as fetched: %w", err)
 	}
 
 	rssFeed, err := feeds.UrlToFeed(ctx, feed.Url)
 	if err != nil {
-		log.Printf("Error fetching feed URL %s: %v", feed.Url, err)
-		return
+		return fmt.Errorf("fetch feed URL %s: %w", feed.Url, err)
 	}
 
 	for _, item := range rssFeed.Channel.Item {
-		log.Println("Found post", item.Title)
+		publishedAt, err := time.Parse(time.RFC1123Z, item.PubDate)
+		if err != nil {
+			publishedAt, err = time.Parse(time.RFC1123, item.PubDate)
+			if err != nil {
+				return fmt.Errorf("parse pubDate %q for feed %s: %w", item.PubDate, feed.ID, err)
+			}
+		}
+
+		_, err = db.CreatePost(ctx, database.CreatePostParams{
+			ID:          uuid.New(),
+			Title:       item.Title,
+			Description: sql.NullString{String: item.Description, Valid: item.Description != ""},
+			PublishedAt: publishedAt,
+			Url:         item.Link,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			if dberr.IsUniqueViolation(err) {
+				fmt.Println("Post already exists, skipping")
+				continue
+			}
+			return fmt.Errorf("create post for feed %s: %w", feed.ID, err)
+		}
 	}
 
+	return nil
 }
 
 func worker(
@@ -38,7 +60,6 @@ func worker(
 	wg *sync.WaitGroup,
 	db *database.Queries,
 ) {
-
 	defer wg.Done() // worker finished
 	for {
 		select {
@@ -48,9 +69,12 @@ func worker(
 			if !ok { // safe check → is channel closed?
 				return
 			}
+			time.Sleep(5 * time.Second)
 			feedCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-			scrapeFeed(feedCtx, db, feed) // sync
-			cancel()                      // free resources, scrapFeed is sync this means it's done
+			if err := scrapeFeed(feedCtx, db, feed); err != nil {
+				log.Printf("Error scraping feed %s: %v", feed.ID, err)
+			}
+			cancel() // free resources, scrapFeed is sync this means it's done
 		}
 	}
 }
@@ -83,7 +107,6 @@ func StartScraping(ctx context.Context, db *database.Queries, concurrency int, i
 		case <-ticker.C:
 			feeds, err := db.GetNextFeedsToFetch(ctx, int32(concurrency))
 			if err != nil {
-				log.Printf("error fetching feeds: %v", err)
 				continue
 			}
 			for _, f := range feeds {

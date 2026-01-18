@@ -40,6 +40,7 @@ func NewRouter(cfg *ApiConfig) http.Handler {
 	// Users
 	v1Router.Post("/users", cfg.handlerCreateUser)
 	v1Router.Get("/users", cfg.middlewareAuth(cfg.handlerGetUser))
+	v1Router.Get("/users/posts", cfg.middlewareAuth(cfg.handlerGetPostsForUser))
 
 	// Feeds
 	v1Router.Post("/feeds", cfg.middlewareAuth(cfg.handlerCreateFeed))

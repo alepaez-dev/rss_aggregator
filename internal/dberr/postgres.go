@@ -1,4 +1,3 @@
-// TODO: not sure if this should go here (check it laterr).
 package dberr
 
 import (

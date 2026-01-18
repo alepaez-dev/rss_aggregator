@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/alepaez-dev/rss_aggregator/internal/database"
 	"github.com/google/uuid"
@@ -62,4 +63,28 @@ func (cfg *ApiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 
 func (cfg *ApiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
 	respondWithJSON(w, http.StatusOK, databaseUserToUser(user))
+}
+
+// Get the posts of the feed that the user follows
+func (cfg *ApiConfig) handlerGetPostsForUser(w http.ResponseWriter, r *http.Request, user database.User) {
+	limit := 2
+	if limitParam := r.URL.Query().Get("limit"); limitParam != "" {
+		parsedLimit, err := strconv.Atoi(limitParam)
+		if err != nil || parsedLimit <= 0 {
+			respondWithError(w, http.StatusBadRequest, "Invalid limit")
+			return
+		}
+		limit = parsedLimit
+	}
+
+	posts, err := cfg.DB.GetPostsForUser(r.Context(), database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  int32(limit),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Couldn't get post for user")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, databasePostsToPosts(posts))
 }

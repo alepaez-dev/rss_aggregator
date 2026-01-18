@@ -67,7 +67,7 @@ func main() {
 
 	// async
 	go func() {
-		tasks.StartScraping(ctx, cfg.DB, 5, 10*time.Second)
+		tasks.StartScraping(ctx, queries, 5, 10*time.Second)
 		close(scrapeDone)
 	}()
 
