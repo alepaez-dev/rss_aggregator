@@ -1,10 +1,11 @@
 package feeds
 
 import (
+	"context"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
 type RSSFeed struct {
@@ -24,14 +25,17 @@ type RSSItem struct {
 	PubDate     string `xml:"pubDate"`
 }
 
-func UrlToFeed(url string) (RSSFeed, error) {
-	httpClient := http.Client{
-		Timeout: 10 * time.Second,
+func UrlToFeed(ctx context.Context, url string) (RSSFeed, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return RSSFeed{}, fmt.Errorf("Error creating HTTP request: %v", err)
 	}
 
-	resp, err := httpClient.Get(url)
+	httpClient := http.Client{} // no need to set timeout, we have context with timeout in parent function
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
-		return RSSFeed{}, err
+		return RSSFeed{}, fmt.Errorf("Error making HTTP request: %v", err)
 	}
 
 	defer resp.Body.Close()

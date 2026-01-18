@@ -8,17 +8,35 @@ import (
 	"time"
 
 	"github.com/alepaez-dev/rss_aggregator/internal/database"
+	"github.com/alepaez-dev/rss_aggregator/internal/feeds"
 )
 
-// TODO: implement the actual scraping logic here
-func scrapFeed(feed database.Feed) {
+func scrapeFeed(ctx context.Context, db *database.Queries, feed database.Feed) {
 	fmt.Println("Scraping feed:", feed.ID)
+
+	_, err := db.MarkFeedAsFetched(ctx, feed.ID)
+	if err != nil {
+		log.Printf("Error marking feed as fetched: %v", err)
+		return
+	}
+
+	rssFeed, err := feeds.UrlToFeed(ctx, feed.Url)
+	if err != nil {
+		log.Printf("Error fetching feed URL %s: %v", feed.Url, err)
+		return
+	}
+
+	for _, item := range rssFeed.Channel.Item {
+		log.Println("Found post", item.Title)
+	}
+
 }
 
 func worker(
 	ctx context.Context,
 	jobs <-chan database.Feed,
 	wg *sync.WaitGroup,
+	db *database.Queries,
 ) {
 
 	defer wg.Done() // worker finished
@@ -30,7 +48,9 @@ func worker(
 			if !ok { // safe check → is channel closed?
 				return
 			}
-			scrapFeed(feed)
+			feedCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+			scrapeFeed(feedCtx, db, feed) // sync
+			cancel()                      // free resources, scrapFeed is sync this means it's done
 		}
 	}
 }
@@ -47,7 +67,7 @@ func StartScraping(ctx context.Context, db *database.Queries, concurrency int, i
 	wg.Add(concurrency) // we will wait for N workers to finish
 
 	for i := 0; i < concurrency; i++ {
-		go worker(ctx, jobs, &wg)
+		go worker(ctx, jobs, &wg, db)
 	}
 
 	// cleanup (1st)

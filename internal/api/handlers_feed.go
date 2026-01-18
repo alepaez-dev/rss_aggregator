@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/alepaez-dev/rss_aggregator/internal/database"
+	"github.com/alepaez-dev/rss_aggregator/internal/dberr"
 	"github.com/google/uuid"
 )
 
@@ -32,6 +33,11 @@ func (cfg *ApiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 	})
 
 	if err != nil {
+		if dberr.IsUniqueViolation(err) {
+			respondWithError(w, http.StatusConflict, "Lead with this URL already exists")
+			return
+		}
+
 		log.Printf("Couldn't create feed: %v", err)
 		respondWithError(w, http.StatusBadRequest, "Couldn't create feed")
 		return

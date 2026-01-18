@@ -25,6 +25,14 @@ func NewRouter(cfg *ApiConfig) http.Handler {
 
 	v1Router := chi.NewRouter()
 
+	/*
+		http Server
+		└─ accepts connection
+			└─ creates *http.Request (with ctx)
+				└─ calls my handler (via chi router)
+					└─ we call r.Context()
+	*/
+
 	// Base
 	v1Router.Get("/healthz", handlerReadiness)
 	v1Router.Get("/err", handlerErr)
